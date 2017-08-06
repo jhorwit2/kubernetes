@@ -59559,36 +59559,9 @@
    "io.k8s.api.policy.v1beta1.PodDisruptionBudgetSpec": {
     "description": "PodDisruptionBudgetSpec is a description of a PodDisruptionBudget.",
     "properties": {
-<<<<<<< HEAD
      "maxUnavailable": {
       "description": "An eviction is allowed if at most \"maxUnavailable\" pods selected by \"selector\" are unavailable after the eviction, i.e. even in absence of the evicted pod. For example, one can prevent all voluntary evictions by specifying 0. This is a mutually exclusive setting with \"minAvailable\".",
       "$ref": "#/definitions/io.k8s.apimachinery.pkg.util.intstr.IntOrString"
-=======
-     "allowedCapabilities": {
-      "description": "AllowedCapabilities is a list of capabilities that can be requested to add to the container. Capabilities in this field may be added at the pod author's discretion. You must not list a capability in both AllowedCapabilities and RequiredDropCapabilities.",
-      "type": "array",
-      "items": {
-       "type": "string"
-      }
-     },
-     "allowedHostPaths": {
-      "description": "AllowedHostPaths is a white list of allowed host path prefixes. Empty indicates that all host paths may be used.",
-      "type": "array",
-      "items": {
-       "type": "string"
-      }
-     },
-     "defaultAddCapabilities": {
-      "description": "DefaultAddCapabilities is the default set of capabilities that will be added to the container unless the pod spec specifically drops the capability.  You may not list a capabiility in both DefaultAddCapabilities and RequiredDropCapabilities.",
-      "type": "array",
-      "items": {
-       "type": "string"
-      }
-     },
-     "fsGroup": {
-      "description": "FSGroup is the strategy that will dictate what fs group is used by the SecurityContext.",
-      "$ref": "#/definitions/io.k8s.kubernetes.pkg.apis.extensions.v1beta1.FSGroupStrategyOptions"
->>>>>>> parent of b6e08ec... Revert "Merge pull request #43946 from jhorwit2/jah/host-path-psp"
      },
      "minAvailable": {
       "description": "An eviction is allowed if at least \"minAvailable\" pods selected by \"selector\" will still be available after the eviction, i.e. even in the absence of the evicted pod.  So for example you can prevent all voluntary evictions by specifying \"100%\".",
