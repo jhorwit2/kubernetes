@@ -1262,6 +1262,7 @@ func (in *PodSecurityPolicyList) DeepCopyInto(out *PodSecurityPolicyList) {
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
+<<<<<<< HEAD
 	}
 	return
 }
@@ -1281,6 +1282,13 @@ func (in *PodSecurityPolicyList) DeepCopyObject() runtime.Object {
 	if c := in.DeepCopy(); c != nil {
 		return c
 	} else {
+=======
+		if in.AllowedHostPaths != nil {
+			in, out := &in.AllowedHostPaths, &out.AllowedHostPaths
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
+>>>>>>> parent of b6e08ec... Revert "Merge pull request #43946 from jhorwit2/jah/host-path-psp"
 		return nil
 	}
 }

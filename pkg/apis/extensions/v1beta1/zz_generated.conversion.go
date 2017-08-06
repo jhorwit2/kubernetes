@@ -1221,8 +1221,12 @@ func autoConvert_v1beta1_PodSecurityPolicySpec_To_extensions_PodSecurityPolicySp
 		return err
 	}
 	out.ReadOnlyRootFilesystem = in.ReadOnlyRootFilesystem
+<<<<<<< HEAD
 	out.DefaultAllowPrivilegeEscalation = (*bool)(unsafe.Pointer(in.DefaultAllowPrivilegeEscalation))
 	out.AllowPrivilegeEscalation = in.AllowPrivilegeEscalation
+=======
+	out.AllowedHostPaths = *(*[]string)(unsafe.Pointer(&in.AllowedHostPaths))
+>>>>>>> parent of b6e08ec... Revert "Merge pull request #43946 from jhorwit2/jah/host-path-psp"
 	return nil
 }
 
@@ -1264,8 +1268,12 @@ func autoConvert_extensions_PodSecurityPolicySpec_To_v1beta1_PodSecurityPolicySp
 		return err
 	}
 	out.ReadOnlyRootFilesystem = in.ReadOnlyRootFilesystem
+<<<<<<< HEAD
 	out.DefaultAllowPrivilegeEscalation = (*bool)(unsafe.Pointer(in.DefaultAllowPrivilegeEscalation))
 	out.AllowPrivilegeEscalation = in.AllowPrivilegeEscalation
+=======
+	out.AllowedHostPaths = *(*[]string)(unsafe.Pointer(&in.AllowedHostPaths))
+>>>>>>> parent of b6e08ec... Revert "Merge pull request #43946 from jhorwit2/jah/host-path-psp"
 	return nil
 }
 

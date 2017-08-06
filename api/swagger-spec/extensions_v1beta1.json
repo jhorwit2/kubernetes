@@ -9423,6 +9423,7 @@
       "type": "boolean",
       "description": "ReadOnlyRootFilesystem when set to true will force containers to run with a read only root file system.  If the container specifically requests to run with a non-read only root file system the PSP should deny the pod. If set to false the container may run with a read only root file system if it wishes but it will not be forced to."
      },
+<<<<<<< HEAD
      "defaultAllowPrivilegeEscalation": {
       "type": "boolean",
       "description": "DefaultAllowPrivilegeEscalation controls the default setting for whether a process can gain more privileges than it's parent process."
@@ -9430,6 +9431,14 @@
      "allowPrivilegeEscalation": {
       "type": "boolean",
       "description": "AllowPrivilegeEscalation determines if a pod can request to allow privilege escalation."
+=======
+     "allowedHostPaths": {
+      "type": "array",
+      "items": {
+       "type": "string"
+      },
+      "description": "AllowedHostPaths is a white list of allowed host path prefixes. Empty indicates that all host paths may be used."
+>>>>>>> parent of b6e08ec... Revert "Merge pull request #43946 from jhorwit2/jah/host-path-psp"
      }
     }
    },
