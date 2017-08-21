@@ -650,6 +650,14 @@ func (instances *instances) InstanceTypeByProviderID(providerID string) (string,
 	return "", errors.New("Not implemented")
 }
 
+func (instances *instances) InstanceExists(nodeName types.NodeName) (bool, error) {
+	return false, errors.New("unimplemented")
+}
+
+func (instances *instances) InstanceExistsByProviderID(providerID string) (bool, error) {
+	return false, errors.New("unimplemented")
+}
+
 func (instances *instances) List(filter string) ([]types.NodeName, error) {
 	return []types.NodeName{}, errors.New("Not implemented")
 }

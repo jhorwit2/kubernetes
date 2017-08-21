@@ -523,7 +523,8 @@ func TestNodeAddresses(t *testing.T) {
 			FailureDomain: "us-west-1a",
 			Region:        "us-west",
 		},
-		Err: nil,
+		Exists: true,
+		Err:    nil,
 	}
 
 	eventBroadcaster := record.NewBroadcaster()
@@ -642,7 +643,8 @@ func TestNodeProvidedIPAddresses(t *testing.T) {
 			FailureDomain: "us-west-1a",
 			Region:        "us-west",
 		},
-		Err: nil,
+		Exists: true,
+		Err:    nil,
 	}
 
 	eventBroadcaster := record.NewBroadcaster()
