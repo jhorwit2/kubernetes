@@ -281,7 +281,7 @@ func buildControllerRoles() ([]rbac.ClusterRole, []rbac.ClusterRoleBinding) {
 		ObjectMeta: metav1.ObjectMeta{Name: saRolePrefix + "service-controller"},
 		Rules: []rbac.PolicyRule{
 			rbac.NewRule("get", "list", "watch").Groups(legacyGroup).Resources("services").RuleOrDie(),
-			rbac.NewRule("update").Groups(legacyGroup).Resources("services/status").RuleOrDie(),
+			rbac.NewRule("patch").Groups(legacyGroup).Resources("services/status").RuleOrDie(),
 			rbac.NewRule("list", "watch").Groups(legacyGroup).Resources("nodes").RuleOrDie(),
 			eventsRule(),
 		},

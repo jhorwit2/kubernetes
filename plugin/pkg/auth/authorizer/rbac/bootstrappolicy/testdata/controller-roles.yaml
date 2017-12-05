@@ -971,7 +971,7 @@ items:
     resources:
     - services/status
     verbs:
-    - update
+    - patch
   - apiGroups:
     - ""
     resources:

@@ -129,6 +129,8 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 
 	for _, item := range table {
 		controller, cloud, client := newController()
+		controller.serviceInformer.GetStore().Add(item.service)
+
 		err, _ := controller.createLoadBalancerIfNeeded("foo/bar", item.service)
 		if !item.expectErr && err != nil {
 			t.Errorf("unexpected error: %v", err)
@@ -163,12 +165,12 @@ func TestCreateExternalLoadBalancer(t *testing.T) {
 			}
 			actionFound := false
 			for _, action := range actions {
-				if action.GetVerb() == "update" && action.GetResource().Resource == "services" {
+				if action.GetVerb() == "patch" && action.GetResource().Resource == "services" {
 					actionFound = true
 				}
 			}
 			if !actionFound {
-				t.Errorf("expected updated service to be sent to client, got these actions instead: %v", actions)
+				t.Errorf("expected patch service to be sent to client, got these actions instead: %v", actions)
 			}
 		}
 	}
@@ -309,7 +311,6 @@ func TestGetNodeConditionPredicate(t *testing.T) {
 func TestProcessServiceUpdate(t *testing.T) {
 
 	var controller *ServiceController
-	var cloud *fakecloud.FakeCloud
 
 	//A pair of old and new loadbalancer IP address
 	oldLBIP := "192.168.1.1"
@@ -327,11 +328,8 @@ func TestProcessServiceUpdate(t *testing.T) {
 			key:      "validKey",
 			svc:      defaultExternalService(),
 			updateFn: func(svc *v1.Service) *v1.Service {
-
-				controller, cloud, _ = newController()
 				controller.cache.getOrCreate("validKey")
 				return svc
-
 			},
 			expectedFn: func(svc *v1.Service, err error, retryDuration time.Duration) error {
 
@@ -396,6 +394,8 @@ func TestProcessServiceUpdate(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		controller, _, _ = newController()
+		controller.serviceInformer.GetStore().Add(tc.svc)
 		newSvc := tc.updateFn(tc.svc)
 		svcCache := controller.cache.getOrCreate(tc.key)
 		obtErr, retryDuration := controller.processServiceUpdate(svcCache, newSvc, tc.key)

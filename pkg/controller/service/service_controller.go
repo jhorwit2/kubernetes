@@ -17,6 +17,7 @@ limitations under the License.
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -27,7 +28,9 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/apimachinery/pkg/util/wait"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	coreinformers "k8s.io/client-go/informers/core/v1"
@@ -37,6 +40,7 @@ import (
 	corelisters "k8s.io/client-go/listers/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/client-go/util/workqueue"
 	v1helper "k8s.io/kubernetes/pkg/apis/core/v1/helper"
 	"k8s.io/kubernetes/pkg/cloudprovider"
@@ -95,6 +99,7 @@ type ServiceController struct {
 	balancer            cloudprovider.LoadBalancer
 	cache               *serviceCache
 	serviceLister       corelisters.ServiceLister
+	serviceInformer     cache.SharedIndexInformer
 	serviceListerSynced cache.InformerSynced
 	eventBroadcaster    record.EventBroadcaster
 	eventRecorder       record.EventRecorder
@@ -132,6 +137,7 @@ func New(
 		cache:            &serviceCache{serviceMap: make(map[string]*cachedService)},
 		eventBroadcaster: broadcaster,
 		eventRecorder:    recorder,
+		serviceInformer:  serviceInformer.Informer(),
 		nodeLister:       nodeInformer.Lister(),
 		nodeListerSynced: nodeInformer.Informer().HasSynced,
 		workingQueue:     workqueue.NewNamedDelayingQueue("service"),
@@ -311,16 +317,12 @@ func (s *ServiceController) createLoadBalancerIfNeeded(key string, service *v1.S
 	}
 
 	// Write the state if changed
-	// TODO: Be careful here ... what if there were other changes to the service?
 	if !v1helper.LoadBalancerStatusEqual(previousState, newState) {
-		// Make a copy so we don't mutate the shared informer cache
-		service = service.DeepCopy()
-
-		// Update the status on the copy
-		service.Status.LoadBalancer = *newState
-
-		if err := s.persistUpdate(service); err != nil {
-			return fmt.Errorf("failed to persist updated status to apiserver, even after retries. Giving up: %v", err), notRetryable
+		err := s.updateLoadBalancerStatus(service, newState)
+		if err != nil {
+			glog.Warningf("Failed to persist updated LoadBalancerStatus to service '%s/%s' after creating its load balancer: %v",
+				service.Namespace, service.Name, err)
+			return err, notRetryable
 		}
 	} else {
 		glog.V(2).Infof("Not persisting unchanged LoadBalancerStatus for service %s to registry.", key)
@@ -329,32 +331,65 @@ func (s *ServiceController) createLoadBalancerIfNeeded(key string, service *v1.S
 	return nil, notRetryable
 }
 
-func (s *ServiceController) persistUpdate(service *v1.Service) error {
-	var err error
-	for i := 0; i < clientRetryCount; i++ {
-		_, err = s.kubeClient.CoreV1().Services(service.Namespace).UpdateStatus(service)
-		if err == nil {
-			return nil
-		}
+func (s *ServiceController) updateLoadBalancerStatus(svc *v1.Service, updatedStatus *v1.LoadBalancerStatus) error {
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		updatedSvc, err := s.serviceLister.Services(svc.Namespace).Get(svc.Name)
 		// If the object no longer exists, we don't want to recreate it. Just bail
 		// out so that we can process the delete, which we should soon be receiving
 		// if we haven't already.
 		if errors.IsNotFound(err) {
 			glog.Infof("Not persisting update to service '%s/%s' that no longer exists: %v",
-				service.Namespace, service.Name, err)
+				svc.Namespace, svc.Name, err)
 			return nil
 		}
-		// TODO: Try to resolve the conflict if the change was unrelated to load
-		// balancer status. For now, just pass it up the stack.
-		if errors.IsConflict(err) {
-			return fmt.Errorf("not persisting update to service '%s/%s' that has been changed since we received it: %v",
-				service.Namespace, service.Name, err)
+
+		if err != nil {
+			return err
 		}
-		glog.Warningf("Failed to persist updated LoadBalancerStatus to service '%s/%s' after creating its load balancer: %v",
-			service.Namespace, service.Name, err)
-		time.Sleep(clientRetryInterval)
+
+		// Make a copy so we don't mutate the shared informer cache
+		updatedSvc = updatedSvc.DeepCopy()
+		updatedSvc.Status.LoadBalancer = *updatedStatus
+
+		return s.patchService(svc, updatedSvc)
+	})
+	if err != nil {
+		return fmt.Errorf("failed to persist updated status to apiserver. Giving up: %v", err)
 	}
-	return err
+	return nil
+}
+
+func (s *ServiceController) patchService(old *v1.Service, updated *v1.Service) error {
+	serviceName := updated.Name
+
+	oldData, err := json.Marshal(old)
+	if err != nil {
+		return fmt.Errorf("failed to marshal old service %#v for serice %q: %v", old, serviceName, err)
+	}
+
+	// Reset spec to make sure only patch for Status or ObjectMeta is generated.
+	// Note that we don't reset ObjectMeta here, because:
+	// 1. This aligns with Services().UpdateStatus().
+	// 2. Allows the finalizers to be updated.
+	updated.Spec = old.Spec
+	newData, err := json.Marshal(updated)
+	if err != nil {
+		return fmt.Errorf("failed to marshal new service %#v for service %q: %v", updated, serviceName, err)
+	}
+
+	patchBytes, err := strategicpatch.CreateTwoWayMergePatch(oldData, newData, v1.Service{})
+	if err != nil {
+		return fmt.Errorf("failed to create patch for service %q: %v", serviceName, err)
+	}
+
+	_, err = s.kubeClient.CoreV1().
+		Services(updated.Namespace).
+		Patch(serviceName, types.StrategicMergePatchType, patchBytes, "status")
+	if err != nil {
+		return fmt.Errorf("failed to patch status %q for service %q: %v", patchBytes, serviceName, err)
+	}
+
+	return nil
 }
 
 func (s *ServiceController) ensureLoadBalancer(service *v1.Service) (*v1.LoadBalancerStatus, error) {
