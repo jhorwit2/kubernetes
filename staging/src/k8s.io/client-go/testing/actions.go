@@ -58,6 +58,16 @@ func NewGetSubresourceAction(resource schema.GroupVersionResource, namespace, su
 	return action
 }
 
+func NewRootGetSubresourceAction(resource schema.GroupVersionResource, subresource, name string) GetActionImpl {
+	action := GetActionImpl{}
+	action.Verb = "get"
+	action.Resource = resource
+	action.Subresource = subresource
+	action.Name = name
+
+	return action
+}
+
 func NewRootListAction(resource schema.GroupVersionResource, kind schema.GroupVersionKind, opts interface{}) ListActionImpl {
 	action := ListActionImpl{}
 	action.Verb = "list"
@@ -95,6 +105,19 @@ func NewListSubresourceAction(resource schema.GroupVersionResource, name, subres
 	return action
 }
 
+func NewRootListSubresourceAction(resource schema.GroupVersionResource, name, subresource string, kind schema.GroupVersionKind, opts interface{}) ListActionImpl {
+	action := ListActionImpl{}
+	action.Verb = "list"
+	action.Resource = resource
+	action.Subresource = subresource
+	action.Kind = kind
+	action.Name = name
+	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
+	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
+
+	return action
+}
+
 func NewRootCreateAction(resource schema.GroupVersionResource, object runtime.Object) CreateActionImpl {
 	action := CreateActionImpl{}
 	action.Verb = "create"
@@ -114,12 +137,23 @@ func NewCreateAction(resource schema.GroupVersionResource, namespace string, obj
 	return action
 }
 
-func NewCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource string, namespace string, object runtime.Object) CreateActionImpl {
+func NewRootCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource string, object runtime.Object) CreateActionImpl {
 	action := CreateActionImpl{}
 	action.Verb = "create"
 	action.Resource = resource
 	action.Subresource = subresource
+	action.Name = name
+	action.Object = object
+
+	return action
+}
+
+func NewCreateSubresourceAction(resource schema.GroupVersionResource, name, subresource, namespace string, object runtime.Object) CreateActionImpl {
+	action := CreateActionImpl{}
+	action.Verb = "create"
+	action.Resource = resource
 	action.Namespace = namespace
+	action.Subresource = subresource
 	action.Name = name
 	action.Object = object
 
