@@ -150,8 +150,6 @@ func (g *genFakeForType) GenerateType(c *generator.Context, t *types.Type, w io.
 		"NewUpdateSubresourceAction":     c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewUpdateSubresourceAction"}),
 		"NewGetSubresourceAction":        c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewGetSubresourceAction"}),
 		"NewRootGetSubresourceAction":    c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewRootGetSubresourceAction"}),
-		"NewListSubresourceAction":       c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewListSubresourceAction"}),
-		"NewRootListSubresourceAction":   c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewRootListSubresourceAction"}),
 		"NewRootUpdateSubresourceAction": c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewRootUpdateSubresourceAction"}),
 		"NewRootPatchAction":             c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewRootPatchAction"}),
 		"NewPatchAction":                 c.Universe.Function(types.Name{Package: pkgClientGoTesting, Name: "NewPatchAction"}),
@@ -238,11 +236,8 @@ func (g *genFakeForType) GenerateType(c *generator.Context, t *types.Type, w io.
 		}
 
 		if e.HasVerb("list") {
-			if e.IsSubresource() {
-				sw.Do(adjustTemplate(e.VerbName, e.VerbType, listSubresourceTemplate), m)
-			} else {
-				sw.Do(adjustTemplate(e.VerbName, e.VerbType, listTemplate), m)
-			}
+
+			sw.Do(adjustTemplate(e.VerbName, e.VerbType, listTemplate), m)
 		}
 
 		// TODO: Figure out schemantic for watching a sub-resource.
@@ -322,19 +317,6 @@ func (c *Fake$.type|publicPlural$) List(opts $.ListOptions|raw$) (result *$.type
 		return nil, err
 	}
 	return obj.(*$.type|raw$List), err
-}
-`
-
-var listSubresourceTemplate = `
-// List takes label and field selectors, and returns the list of $.resultType|publicPlural$ that match those selectors.
-func (c *Fake$.type|publicPlural$) List($.type|private$Name string, opts $.ListOptions|raw$) (result *$.resultType|raw$List, err error) {
-	obj, err := c.Fake.
-		$if .namespaced$Invokes($.NewListSubresourceAction|raw$($.type|allLowercasePlural$Resource, $.type|private$Name, "$.subresourcePath$", $.type|allLowercasePlural$Kind, c.ns, opts), &$.resultType|raw$List{})
-		$else$Invokes($.NewRootListSubresourceAction|raw$($.type|allLowercasePlural$Resource, $.type|private$Name), &$.resultType|raw${})$end$
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*$.resultType|raw$List), err
 }
 `
 

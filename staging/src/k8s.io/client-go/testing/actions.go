@@ -91,33 +91,6 @@ func NewListAction(resource schema.GroupVersionResource, kind schema.GroupVersio
 	return action
 }
 
-func NewListSubresourceAction(resource schema.GroupVersionResource, name, subresource string, kind schema.GroupVersionKind, namespace string, opts interface{}) ListActionImpl {
-	action := ListActionImpl{}
-	action.Verb = "list"
-	action.Resource = resource
-	action.Subresource = subresource
-	action.Kind = kind
-	action.Namespace = namespace
-	action.Name = name
-	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
-	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
-
-	return action
-}
-
-func NewRootListSubresourceAction(resource schema.GroupVersionResource, name, subresource string, kind schema.GroupVersionKind, opts interface{}) ListActionImpl {
-	action := ListActionImpl{}
-	action.Verb = "list"
-	action.Resource = resource
-	action.Subresource = subresource
-	action.Kind = kind
-	action.Name = name
-	labelSelector, fieldSelector, _ := ExtractFromListOptions(opts)
-	action.ListRestrictions = ListRestrictions{labelSelector, fieldSelector}
-
-	return action
-}
-
 func NewRootCreateAction(resource schema.GroupVersionResource, object runtime.Object) CreateActionImpl {
 	action := CreateActionImpl{}
 	action.Verb = "create"
