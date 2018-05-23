@@ -342,6 +342,10 @@ type completedConfig struct {
 	// values below here are filled in during completion
 	//===========================================================================
 
+	// ClientConfig provides the configuration for communicating with the apiserver
+	// to be used by other resources like additional delegated apiservers.
+	ClientConfig *restclient.Config
+
 	// SharedInformerFactory provides shared informers for resources
 	SharedInformerFactory informers.SharedInformerFactory
 }
@@ -353,7 +357,7 @@ type CompletedConfig struct {
 
 // Complete fills in any fields not set that are required to have valid data and can be derived
 // from other fields. If you're going to `ApplyOptions`, do that first. It's mutating the receiver.
-func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedConfig {
+func (c *Config) Complete(clientConfig *restclient.Config, informers informers.SharedInformerFactory) CompletedConfig {
 	host := c.ExternalAddress
 	if host == "" && c.PublicAddress != nil {
 		host = c.PublicAddress.String()
@@ -432,13 +436,17 @@ func (c *Config) Complete(informers informers.SharedInformerFactory) CompletedCo
 		c.RequestInfoResolver = NewRequestInfoResolver(c)
 	}
 
-	return CompletedConfig{&completedConfig{c, informers}}
+	return CompletedConfig{&completedConfig{
+		Config:                c,
+		ClientConfig:          clientConfig,
+		SharedInformerFactory: informers,
+	}}
 }
 
 // Complete fills in any fields not set that are required to have valid data and can be derived
 // from other fields. If you're going to `ApplyOptions`, do that first. It's mutating the receiver.
 func (c *RecommendedConfig) Complete() CompletedConfig {
-	return c.Config.Complete(c.SharedInformerFactory)
+	return c.Config.Complete(c.ClientConfig, c.SharedInformerFactory)
 }
 
 // New creates a new server which logically combines the handling chain with the passed server.

@@ -249,7 +249,7 @@ func (c *Config) createEndpointReconciler() reconcilers.EndpointReconciler {
 // Complete fills in any fields not set that are required to have valid data. It's mutating the receiver.
 func (cfg *Config) Complete(informers informers.SharedInformerFactory) CompletedConfig {
 	c := completedConfig{
-		cfg.GenericConfig.Complete(informers),
+		cfg.GenericConfig.Complete(cfg.GenericConfig.LoopbackClientConfig, informers),
 		&cfg.ExtraConfig,
 	}
 
